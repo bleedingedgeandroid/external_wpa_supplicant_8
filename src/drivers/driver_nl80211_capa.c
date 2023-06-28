@@ -1422,10 +1422,9 @@ static void qca_nl80211_get_features(struct wpa_driver_nl80211_data *drv)
 		    QCA_WLAN_VENDOR_FEATURE_PROT_RANGE_NEGO_AND_MEASURE_AP,
 		    &info))
 		drv->capa.flags2 |= WPA_DRIVER_FLAGS2_PROT_RANGE_NEG_AP;
-	if (check_feature(QCA_WLAN_VENDOR_FEATURE_ADAPTIVE_11R, &info)) {
-		wpa_printf(MSG_INFO, "Driver support of Enabled Adaptive 11r");
-		drv->capa.flags2 |= WPA_DRIVER_FLAGS_ADAPTIVE_11R;
-	}
+	if (check_feature(QCA_WLAN_VENDOR_FEATURE_AP_ALLOWED_FREQ_LIST,
+			  &info))
+		drv->qca_ap_allowed_freqs = 1;
 	os_free(info.flags);
 }
 

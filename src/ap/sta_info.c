@@ -197,7 +197,10 @@ void ap_free_sta(struct hostapd_data *hapd, struct sta_info *sta)
 	ap_sta_set_authorized(hapd, sta, 0);
 	hostapd_set_sta_flags(hapd, sta);
 
-	if (sta->flags & (WLAN_STA_WDS | WLAN_STA_MULTI_AP))
+	if ((sta->flags & WLAN_STA_WDS) ||
+	    (sta->flags & WLAN_STA_MULTI_AP &&
+	     !(hapd->conf->multi_ap & FRONTHAUL_BSS) &&
+	     !(sta->flags & WLAN_STA_WPS)))
 		hostapd_set_wds_sta(hapd, NULL, sta->addr, sta->aid, 0);
 
 	if (sta->ipaddr)
@@ -1303,22 +1306,11 @@ void ap_sta_set_authorized(struct hostapd_data *hapd, struct sta_info *sta,
 		return;
 
 	if (authorized) {
-		int mld_assoc_link_id = -1;
-
-#ifdef CONFIG_IEEE80211BE
-		if (hapd->conf->mld_ap && sta->mld_info.mld_sta) {
-			if (sta->mld_assoc_link_id == hapd->mld_link_id)
-				mld_assoc_link_id = sta->mld_assoc_link_id;
-			else
-				mld_assoc_link_id = -2;
-		}
-#endif /* CONFIG_IEEE80211BE */
-		if (mld_assoc_link_id != -2)
-			hostapd_prune_associations(hapd, sta->addr,
-						   mld_assoc_link_id);
+		hostapd_prune_associations(hapd, sta->addr);
 		sta->flags |= WLAN_STA_AUTHORIZED;
 	} else {
 		sta->flags &= ~WLAN_STA_AUTHORIZED;
+	}
 	}
 
 #ifdef CONFIG_P2P
@@ -1572,11 +1564,12 @@ static void ap_sta_delayed_1x_auth_fail_cb(void *eloop_ctx, void *timeout_ctx)
 
 
 void ap_sta_delayed_1x_auth_fail_disconnect(struct hostapd_data *hapd,
-					    struct sta_info *sta)
+					    struct sta_info *sta,
+					    unsigned timeout)
 {
 	wpa_dbg(hapd->msg_ctx, MSG_DEBUG,
 		"IEEE 802.1X: Force disconnection of " MACSTR
-		" after EAP-Failure in 10 ms", MAC2STR(sta->addr));
+		" after EAP-Failure in %u ms", MAC2STR(sta->addr), timeout);
 
 	/*
 	 * Add a small sleep to increase likelihood of previously requested
@@ -1584,8 +1577,8 @@ void ap_sta_delayed_1x_auth_fail_disconnect(struct hostapd_data *hapd,
 	 * operations.
 	 */
 	eloop_cancel_timeout(ap_sta_delayed_1x_auth_fail_cb, hapd, sta);
-	eloop_register_timeout(0, 10000, ap_sta_delayed_1x_auth_fail_cb,
-			       hapd, sta);
+	eloop_register_timeout(0, timeout * 1000,
+			       ap_sta_delayed_1x_auth_fail_cb, hapd, sta);
 }
 
 

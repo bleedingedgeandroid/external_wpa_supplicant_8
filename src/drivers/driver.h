@@ -442,6 +442,18 @@ struct t2lm_mapping {
 	u8 uplink;
 };
 
+struct t2lm_mapping {
+	/**
+	 * downlink - Bitmap of TIDs mapped with a link in downlink direction
+	 */
+	u8 downlink;
+
+	/**
+	 * uplink - Bitmap of TIDs mapped with a link in uplink direction
+	 */
+	u8 uplink;
+};
+
 /**
  * struct wpa_driver_scan_params - Scan parameters
  * Data for struct wpa_driver_ops::scan2().
@@ -1773,15 +1785,15 @@ struct wpa_driver_ap_params {
 	 */
 	u8 **rnr_elem_offset;
 
-	/*
-	 * mld_ap - Whether operating as an AP MLD
-	 */
-	bool mld_ap;
-
 	/**
-	 * mld_link_id - Link id for MLD BSS's
+	 * allowed_freqs - List of allowed 20 MHz channel center frequencies in
+	 * MHz for AP operation. Drivers which support this parameter will
+	 * generate a new list based on this provided list by filtering out
+	 * channels that cannot be used at that time due to regulatory or other
+	 * constraints. The resulting list is used as the list of all allowed
+	 * channels whenever performing operations like ACS and DFS.
 	 */
-	u8 mld_link_id;
+	int *allowed_freqs;
 };
 
 struct wpa_driver_mesh_bss_params {
@@ -2941,6 +2953,7 @@ struct weighted_pcl {
 
 struct driver_sta_mlo_info {
 	bool default_map;
+	bool default_map;
 	u16 req_links; /* bitmap of requested link IDs */
 	u16 valid_links; /* bitmap of accepted link IDs */
 	u8 assoc_link_id;
@@ -2949,6 +2962,7 @@ struct driver_sta_mlo_info {
 		u8 addr[ETH_ALEN];
 		u8 bssid[ETH_ALEN];
 		unsigned int freq;
+		struct t2lm_mapping t2lmap;
 		struct t2lm_mapping t2lmap;
 	} links[MAX_NUM_MLD_LINKS];
 };
@@ -5706,6 +5720,21 @@ enum wpa_event_type {
 	 * EVENT_LINK_RECONFIG - Notification that AP links removed
 	 */
 	EVENT_LINK_RECONFIG,
+
+	/**
+	 * EVENT_TID_LINK_MAP - MLD event to set TID-to-link mapping
+	 *
+	 * This event is used by the driver to indicate the received TID-to-link
+	 * mapping response from the associated AP MLD.
+	 *
+	 * Described in wpa_event_data.t2l_map_info.
+	 */
+	EVENT_TID_LINK_MAP,
+
+	/**
+	 * EVENT_LINK_RECONFIG - Notification that AP links removed
+	 */
+	EVENT_LINK_RECONFIG,
 };
 
 
@@ -6647,6 +6676,15 @@ union wpa_event_data {
 		const u8 *td_bitmap;
 		size_t td_bitmap_len;
 	} port_authorized;
+
+	/**
+	 * struct tid_link_map_info - Data for EVENT_TID_LINK_MAP
+	 */
+	struct tid_link_map_info {
+		bool default_map;
+		u8 valid_links;
+		struct t2lm_mapping t2lmap[MAX_NUM_MLD_LINKS];
+	} t2l_map_info;
 
 	/**
 	 * struct tid_link_map_info - Data for EVENT_TID_LINK_MAP
