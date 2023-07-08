@@ -487,7 +487,7 @@ struct eap_peer_config {
 	 * tunnel) behavior for PEAP:
 	 * 0 = do not require Phase 2 authentication
 	 * 1 = require Phase 2 authentication when client certificate
-	 *  (private_key/client_cert) is no used and TLS session resumption was
+	 *  (private_key/client_cert) is not used and TLS session resumption was
 	 *  not used (default)
 	 * 2 = require Phase 2 authentication in all cases
 	 *
