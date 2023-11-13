@@ -65,7 +65,7 @@ private:
 	    const ChannelParams& channelParams,
 	    const NetworkParams& nw_params,
 	    std::string br_name,
-	    std::string owe_transition_ifname, bool enable_11be);
+	    std::string owe_transition_ifname);
 	::ndk::ScopedAStatus addConcurrentAccessPoints(
 	    const IfaceParams& IfaceParams,
 	    const NetworkParams& nw_params);
